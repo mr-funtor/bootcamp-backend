@@ -1,0 +1,144 @@
+# -------------------------------------------------
+# PIPELINE nAME
+# -------------------------------------------------
+name: Docker Build, Scan and Push Pipeline
+
+# -------------------------------------------------
+# TRIGGERS
+# -------------------------------------------------
+# Workflow runs when:
+# 1. Code is pushed to main branch
+# 2. Manually triggered from GitHub UI
+# -------------------------------------------------
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/**'  # Ignore workflow file changes
+      - '**/*.md'  # Ignore documentation changes
+  workflow_dispatch:
+
+# -------------------------------------------------
+# GLOBAL VARIABLES
+# -------------------------------------------------
+env:
+  DOCKER_REPO: mrfuntor
+  DOCKER_IMAGE_NAME: devops-bootcamp-linker-frontend-main-backend
+  NEXT_PUBLIC_API_URL: http://localhost:3001/api
+
+# -------------------------------------------------
+# JOB 1: Notify Slack that pipeline started
+# -------------------------------------------------
+jobs:
+  notify-slack-start: #this is used to identify the job, it can be any name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification - Pipeline Started
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_TITLE: "🚀 Docker Build, Scan and Push Pipeline Started"
+          SLACK_MESSAGE: "🚀 Docker Build, Scan and Push Pipeline has started for commit `${{ github.sha }}` on branch `${{ github.ref_name }}`."
+          SLACK_COLOR: "#36a64f"
+
+
+# -------------------------------------------------
+# JOB 2: Build, Scan and Push Docker Image
+# -------------------------------------------------
+  build-and-scan:
+    needs: notify-slack-start # This job will run after the notify-slack-start job
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read  # Allow reading repository contents for checkout
+      packages: write  # Allow pushing to GitHub Packages if needed
+    steps:
+      # -------------------------------------------------
+      # STEP 1: Checkout Repository
+      # -------------------------------------------------
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # -------------------------------------------------
+      # STEP 2: Setup Docker Buildx
+      # -------------------------------------------------
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      # -------------------------------------------------
+      # STEP 3: Login to Docker Hub
+      # -------------------------------------------------
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ env.DOCKER_REPO }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      # -------------------------------------------------
+      # STEP 4: Generate Image Tag (Commit SHA)
+      # -------------------------------------------------
+      - name: Generate DockerImage Tag
+        id: tag
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=sha,format=short
+
+      # -------------------------------------------------
+      # STEP 5: Build Docker Image
+      # -------------------------------------------------
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true  # Load the image into the Docker cache for scanning
+          tags: ${{ steps.tag.outputs.tags }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
+
+      # -------------------------------------------------
+      # STEP 6: Install Trivy Security Scanner
+      # -------------------------------------------------
+      - name: Install Trivy Security Scanner
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      # -------------------------------------------------
+      # STEP 7: Scan Docker Image for Vulnerabilities
+      # -------------------------------------------------
+      - name: Scan Docker Image for Vulnerabilities
+        run: |
+          trivy image --format table  --exit-code 1 --ignore-unfixed --ignore-unfixed --severity HIGH,CRITICAL  ${{ steps.tag.outputs.tags }}
+          | tee trivy-report.txt  # Save the report to a file for uploading as an artifact
+
+      # -------------------------------------------------
+      # STEP 8: Upload Scan Report
+      # -------------------------------------------------
+      - name: Upload Trivy Scan Report
+        if: always ()  # Ensure this step runs even if the scan fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-scan-report
+          path: trivy-report.txt
+
+      # -------------------------------------------------
+      # STEP 9: Push Docker Image to Docker Hub
+      # -------------------------------------------------
+      - name: Push Docker Image to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.tag.outputs.tags }}
+
+      # -------------------------------------------------
+      # STEP 10: Final Slack Notification
+      # -------------------------------------------------
+      - name: Send Slack Notification - Pipeline Completed
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_TITLE: "✅ Docker Build, Scan and Push Pipeline Completed"
+          SLACK_MESSAGE: "✅ Docker Build, Scan and Push Pipeline has completed for commit `${{ github.sha }}` on branch `${{ github.ref_name }}`. Image tagged as `${{ steps.tag.outputs.tags }}`."
+          SLACK_COLOR: "#36a64f"
