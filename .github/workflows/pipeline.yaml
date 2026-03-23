@@ -33,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack Notification - Pipeline Started
+        continue-on-error: true
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
@@ -130,6 +131,7 @@ jobs:
       # STEP 10: Final Slack Notification
       # -------------------------------------------------
       - name: Send Slack Notification - Pipeline Completed
+        continue-on-error: true
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
