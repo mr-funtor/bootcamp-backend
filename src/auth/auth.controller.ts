@@ -15,7 +15,7 @@ export class AuthController {
     const result = await this.authService.register(body.email, body.password);
     return {
       success: true,
-      message: "Account created successfully",
+      message: "Account created successfully yes",
       ...result,
     };
   }
