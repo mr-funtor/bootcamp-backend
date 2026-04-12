@@ -9,7 +9,10 @@ async function bootstrap() {
   app.setGlobalPrefix("api");
 
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+    origin: [process.env.FRONTEND_ORIGIN, 
+      'http://charlesmonroe.online',
+    'https://charlesmonroe.online', // Always include https just in case
+    'http://www.charlesmonroe.online'],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
     allowedHeaders: "Content-Type, Authorization",
   });
