@@ -4,33 +4,17 @@ metadata:
   name: linker-ingress
   namespace: linker-app
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    kubernetes.io/ingress.class: traefik
 spec:
   ingressClassName: public
   rules:
-  - http:
+  - host: api.charlesmonroe.online
+    http:
       paths:
-      # Frontend
-      - path: /api/check
-        pathType: Exact
-        backend:
-          service:
-            name: linker-app-service
-            port:
-              number: 80
-      # Backend API
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: linker-backend-service
-            port:
-              number: 80
-      # Frontend catch-all route
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: linker-app-service
+            name: linker-backend-service
             port:
               number: 80
