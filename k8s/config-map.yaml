@@ -4,7 +4,7 @@ metadata:
   name: linker-app-config
   namespace: linker-app
 data:
-  NEXT_PUBLIC_API_URL: "http://backend-service"
-  FRONTEND_ORIGIN: "http://frontend-service"
+  NEXT_PUBLIC_API_URL: "http://linker-backend-service"
+  FRONTEND_ORIGIN: "http://linker-app-service"
   PORT: "3001"
   NODE_ENV: "production"
