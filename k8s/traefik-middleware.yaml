@@ -1,0 +1,17 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: cors-headers
+  namespace: linker-app
+spec:
+  headers:
+    accessControlAllowMethods:
+      - "GET"
+      - "OPTIONS"
+      - "POST"
+    accessControlAllowOriginList:
+      - "http://charlesmonroe.online"
+      - "https://charlesmonroe.online"
+      - "http://www.charlesmonroe.online"
+    accessControlMaxAge: 100
+    addVaryHeader: true
