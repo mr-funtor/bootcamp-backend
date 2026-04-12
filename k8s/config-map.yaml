@@ -4,6 +4,6 @@ metadata:
   name: linker-app-config
   namespace: linker-app
 data:
-  FRONTEND_ORIGIN: "http://charlesmonroe.online/"
+  FRONTEND_ORIGIN: "http://charlesmonroe.online"
   PORT: "3001"
   NODE_ENV: "production"
