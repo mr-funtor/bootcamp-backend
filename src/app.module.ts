@@ -5,9 +5,10 @@ import { LinksModule } from "./links/links.module";
 import { UploadModule } from "./upload/upload.module";
 import { PrismaService } from "./prisma";
 import { JwtService } from "./common/jwt.service";
+import { HealthModule } from "./health/health.module";
 
 @Module({
-  imports: [AuthModule, ProfileModule, LinksModule, UploadModule],
+  imports: [AuthModule, ProfileModule, LinksModule, UploadModule, HealthModule],
   providers: [PrismaService, JwtService],
   exports: [PrismaService, JwtService],
 })
