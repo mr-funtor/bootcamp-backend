@@ -5,10 +5,19 @@ metadata:
   namespace: linker-app
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1 # Capture the path after /api/ and forward it to the backend
 spec:
   rules:
   - http:
       paths:
+      - path: /api/(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: linker-backend-service
+            port:
+              number: 80
+
       - path: /api/check
         pathType: Exact
         backend:
@@ -17,13 +26,6 @@ spec:
             port:
               number: 80
 
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: linker-backend-service
-            port:
-              number: 80
       # Frontend catch-all route
       - path: /
         pathType: Prefix
