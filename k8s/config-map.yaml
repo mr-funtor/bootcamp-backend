@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linker-app-config
+  namespace: linker-app
+data:
+  NEXT_PUBLIC_API_URL: "http://backend-service"
+  FRONTEND_ORIGIN: "http://frontend-service"
+  PORT: "3001"
+  NODE_ENV: "production"

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: linker-backend-service
+  namespace: linker-app
+spec:
+  type: ClusterIP # Internal only; the Ingress handles public access
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3001
