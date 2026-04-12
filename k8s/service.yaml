@@ -4,11 +4,10 @@ metadata:
   name: linker-backend-service
   namespace: linker-app
 spec:
-  type: NodePort # Internal only; the Ingress handles public access
+  type: ClusterIP 
   selector:
     app: backend
   ports:
     - protocol: TCP
       port: 80
       targetPort: 3001
-      nodePort: 30020

@@ -5,19 +5,12 @@ metadata:
   namespace: linker-app
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/use-regex: "true" # Enable regex for path matching
 spec:
+  ingressClassName: public
   rules:
   - http:
       paths:
-      - path: /api/.*
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: linker-backend-service
-            port:
-              number: 80
-
+      # Frontend
       - path: /api/check
         pathType: Exact
         backend:
@@ -25,7 +18,14 @@ spec:
             name: linker-app-service
             port:
               number: 80
-
+      # Backend API
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: linker-backend-service
+            port:
+              number: 80
       # Frontend catch-all route
       - path: /
         pathType: Prefix
