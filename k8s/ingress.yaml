@@ -5,8 +5,8 @@ metadata:
   namespace: linker-app
   annotations:
     kubernetes.io/ingress.class: traefik
-    traefik.ingress.kubernetes.io/router.middlewares: linker-app-cors-headers@kubernetescrd
 spec:
+  ingressClassName: public
   rules:
   - host: api.charlesmonroe.online
     http:
