@@ -4,7 +4,6 @@ metadata:
   name: linker-app-config
   namespace: linker-app
 data:
-  NEXT_PUBLIC_API_URL: "http://linker-backend-service"
-  FRONTEND_ORIGIN: "http://213.199.52.213:30080"
+  FRONTEND_ORIGIN: "http://charlesmonroe.online/"
   PORT: "3001"
   NODE_ENV: "production"
