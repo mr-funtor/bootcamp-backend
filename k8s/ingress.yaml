@@ -5,8 +5,14 @@ metadata:
   namespace: linker-app
   annotations:
     kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: "linker-issuer"
 spec:
   ingressClassName: public
+  tls:
+  - hosts:
+    - charlesmonroe.online
+    - api.charlesmonroe.online
+    secretName: linker-tls-cert
   rules:
   - host: api.charlesmonroe.online
     http:
