@@ -1,7 +1,11 @@
 name: Deploy to Contabo
+
 on:
   push:
     branches: [ main ]
+
+permissions:
+  contents: write
 
 env:
   DOCKER_REPO: mrfuntor
@@ -10,6 +14,10 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,51 +31,45 @@ jobs:
           username: ${{ env.DOCKER_REPO }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Generate DockerImage Tag
-        id: tag
+      - name: Generate Docker Image Tag
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE_NAME }}
           tags: |
-            type=sha,format=short
+            type=sha
 
-      - name: Build and Push Docker Image to Docker Hub
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.tag.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-    outputs:
-      image-tag: ${{ steps.tag.outputs.version }}
 
-  deploy-to-contabo:
+
+  deploy-to-gitops:
     needs: build-and-deploy
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout K8s Manifests
+      - name: Checkout Repo
         uses: actions/checkout@v4
-
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v3
-
-      - name: Set Kubernetes Context
-        uses: azure/k8s-set-context@v3
         with:
-          method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update Deployment Image
         run: |
-          # Dynamically swap the placeholder image with the new SHA-tagged image
-          sed -i "s|image: ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE_NAME }}:.*|image: ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build-and-deploy.outputs.image-tag }}|g" k8s/deployment.yaml
+          yq -i '.spec.template.spec.containers[0].image = "${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build-and-deploy.outputs.image-tag }}"' k8s/deployment.yaml
 
-      - name: Deploy to MicroK8s
+      - name: Commit and Push Changes
         run: |
-          kubectl apply -f k8s/
-          kubectl apply -f argocd/app-definition.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Verify Deployment
-        run: |
-          kubectl rollout status deployment/backend-deployment -n linker-app
+          git add k8s/deployment.yaml
+
+          git commit -m "chore: update backend image to ${{ needs.build-and-deploy.outputs.image-tag }}" || echo "No changes to commit"
+
+          git push
