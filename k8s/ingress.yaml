@@ -5,7 +5,7 @@ metadata:
   namespace: linker-app
   annotations:
     kubernetes.io/ingress.class: traefik
-    cert-manager.io/cluster-issuer: "linker-issuer"
+    cert-manager.io/cluster-issuer: "linker-issuer" # the name of the ClusterIssuer you created
 spec:
   ingressClassName: public
   tls:

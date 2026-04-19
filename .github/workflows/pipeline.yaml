@@ -66,6 +66,7 @@ jobs:
       - name: Deploy to MicroK8s
         run: |
           kubectl apply -f k8s/
+          kubectl apply -f argocd/app-definition.yaml
 
       - name: Verify Deployment
         run: |
