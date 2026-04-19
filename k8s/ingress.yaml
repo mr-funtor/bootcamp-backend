@@ -7,7 +7,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
     cert-manager.io/cluster-issuer: "linker-issuer" # the name of the ClusterIssuer you created
 spec:
-  ingressClassName: public
+  ingressClassName: traefik
   tls:
   - hosts:
     - charlesmonroe.online
