@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: mrfuntor/devops-bootcamp-linker-backend:sha-665ebca
+          image: mrfuntor/devops-bootcamp-linker-backend:sha-de5e5c5
           ports:
             - containerPort: 3001
           envFrom:
