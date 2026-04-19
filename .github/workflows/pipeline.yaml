@@ -1,8 +1,10 @@
-name: Deploy to Contabo
+name: Build and Deploy (ArgoCD)
 
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'k8s/deployment.yaml'
 
 permissions:
   contents: write
@@ -12,17 +14,17 @@ env:
   DOCKER_IMAGE_NAME: devops-bootcamp-linker-backend
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     outputs:
-      image-tag: ${{ steps.meta.outputs.version }}
+      image-tag: ${{ steps.tag.outputs.tag }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Docker
+      - name: Setup Docker
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
@@ -31,45 +33,52 @@ jobs:
           username: ${{ env.DOCKER_REPO }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Generate Docker Image Tag
+      - name: Generate Image Tag
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE_NAME }}
           tags: |
-            type=sha
+            type=sha,format=short
 
-      - name: Build and Push Docker Image
+      - name: Extract Tag
+        id: tag
+        run: |
+          echo "tag=$(echo '${{ steps.meta.outputs.tags }}' | head -n 1 | awk -F':' '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
 
-  deploy-to-gitops:
-    needs: build-and-deploy
+  deploy-gitops:
+    needs: build
     runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
 
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-      - name: Update Deployment Image
+      - name: Setup yq
+        uses: mikefarah/yq@v4
+
+      - name: Update Image in Deployment YAML
         run: |
-          yq -i '.spec.template.spec.containers[0].image = "${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build-and-deploy.outputs.image-tag }}"' k8s/deployment.yaml
+          yq -i '.spec.template.spec.containers[0].image = "${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}"' k8s/deployment.yaml
 
-      - name: Commit and Push Changes
+      - name: Commit and Push Update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add k8s/deployment.yaml
 
-          git commit -m "chore: update backend image to ${{ needs.build-and-deploy.outputs.image-tag }}" || echo "No changes to commit"
+          git commit -m "chore: update backend image to ${{ needs.build.outputs.image-tag }}" || echo "No changes"
 
-          git push
+          git push origin HEAD:main
