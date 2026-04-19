@@ -11,40 +11,40 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 1       
-      maxUnavailable: 0 
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: backend
     spec:
       containers:
-      - name: backend
-        image: mrfuntor/devops-bootcamp-linker-backend:latest
-        ports:
-        - containerPort: 3001
-        envFrom:
-        - configMapRef:
-            name: linker-app-config
-        env:
-          - name: DATABASE_URL
-            value: "postgres://user:password@database:5432/mydb-banana"
-        resources:
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
-          requests:
-            cpu: "250m"
-            memory: "256Mi"
-        livenessProbe:
-          httpGet:
-            path: /api/health
-            port: 3001
-          initialDelaySeconds: 20
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /api/health
-            port: 3001
-          initialDelaySeconds: 10
-          periodSeconds: 5
+        - name: backend
+          image: mrfuntor/devops-bootcamp-linker-backend:sha-c4763bc
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: linker-app-config
+          env:
+            - name: DATABASE_URL
+              value: "postgres://user:password@database:5432/mydb-banana"
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3001
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 5
