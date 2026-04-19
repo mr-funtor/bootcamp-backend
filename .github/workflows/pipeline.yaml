@@ -68,6 +68,15 @@ jobs:
       - name: Setup yq
         uses: mikefarah/yq@v4
 
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set Kube Context
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
       - name: Update Image in Deployment YAML
         run: |
           yq -i '.spec.template.spec.containers[0].image = "${{ env.DOCKER_REPO }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}"' k8s/deployment.yaml
@@ -82,3 +91,7 @@ jobs:
           git commit -m "chore: update backend image to ${{ needs.build.outputs.image-tag }}" || echo "No changes"
 
           git push origin HEAD:main
+
+      - name: Apply Argo CD Application
+        run: |
+          kubectl apply -n argocd -f argocd/app-definition.yaml
